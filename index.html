@@ -1,1 +1,60 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cotizador — Método Zitro</title>
 
+<style>
+body{
+  margin:0;
+  font-family:system-ui,Arial;
+  background:#f4f6fb;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+.card{
+  background:#fff;
+  padding:30px;
+  border-radius:18px;
+  box-shadow:0 10px 30px rgba(0,0,0,.08);
+  text-align:center;
+  max-width:420px;
+}
+h1{margin:0 0 10px 0}
+p{opacity:.7;font-size:14px}
+button{
+  margin-top:20px;
+  width:100%;
+  padding:14px;
+  border:0;
+  border-radius:12px;
+  background:#2563eb;
+  color:#fff;
+  font-weight:700;
+  cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <h1>Cotizador Método Zitro</h1>
+  <p>Compatible con iPhone · Android · PC</p>
+  <button onclick="abrir()">Abrir Cotizador</button>
+</div>
+
+<script>
+const URL_COTIZADOR =
+"https://script.google.com/macros/s/AKfycbzCzL7Md2RpY3F4LCpcu6hNSSdgd_6kch5f0Lqjh-kLzHA1gSwSZTSjyRUIbFf0VO9H/exec";
+
+function abrir(){
+  window.location.href = URL_COTIZADOR;
+}
+</script>
+
+</body>
+</html>

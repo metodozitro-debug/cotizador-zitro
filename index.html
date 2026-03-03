@@ -1,60 +1,955 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cotizador — Método Zitro</title>
-
-<style>
-body{
-  margin:0;
-  font-family:system-ui,Arial;
-  background:#f4f6fb;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:100vh;
-}
-.card{
-  background:#fff;
-  padding:30px;
-  border-radius:18px;
-  box-shadow:0 10px 30px rgba(0,0,0,.08);
-  text-align:center;
-  max-width:420px;
-}
-h1{margin:0 0 10px 0}
-p{opacity:.7;font-size:14px}
-button{
-  margin-top:20px;
-  width:100%;
-  padding:14px;
-  border:0;
-  border-radius:12px;
-  background:#2563eb;
-  color:#fff;
-  font-weight:700;
-  cursor:pointer;
-}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cotizador — Programa Socioemocional | Método Zitro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #060d1a;
+      --surface: #0d1f3c;
+      --surface2: #112244;
+      --border: rgba(59,130,246,0.18);
+      --accent: #3b82f6;
+      --accent2: #60a5fa;
+      --gold: #f59e0b;
+      --text: #e2e8f0;
+      --muted: #7ea3cc;
+      --success: #10b981;
+      --danger: #ef4444;
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Sora', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(59,130,246,0.13) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 90% 80%, rgba(245,158,11,0.06) 0%, transparent 60%);
+      pointer-events: none; z-index: 0;
+    }
+    .header {
+      position: relative; z-index: 10;
+      padding: 20px 28px;
+      display: flex; align-items: center; gap: 14px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(6,13,26,0.85);
+      backdrop-filter: blur(12px);
+    }
+    .logo-mark {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--accent), var(--gold));
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: 900; color: #fff; flex-shrink: 0;
+    }
+    .logo-name { font-family: 'DM Serif Display', serif; font-size: 17px; color: #fff; }
+    .logo-sub  { font-size: 11px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+    .progress-wrap {
+      position: relative; z-index: 10;
+      padding: 18px 24px 0;
+      max-width: 760px; margin: 0 auto;
+    }
+    .step-labels { display: flex; justify-content: space-between; margin-bottom: 10px; }
+    .step-dot { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .step-dot .dot {
+      width: 26px; height: 26px; border-radius: 50%;
+      border: 2px solid var(--border); background: var(--surface);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      transition: all .3s;
+    }
+    .step-dot.active .dot { border-color: var(--accent); background: var(--accent); color: #fff; }
+    .step-dot.done .dot   { border-color: var(--success); background: var(--success); color: #fff; }
+    .step-dot .step-label { font-size: 9px; color: var(--muted); text-align: center; max-width: 56px; line-height: 1.3; display: none; }
+    @media(min-width:560px){ .step-dot .step-label { display: block; } }
+    .progress-bar { height: 4px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--gold)); border-radius: 99px; transition: width .4s ease; }
+    main { position: relative; z-index: 10; max-width: 760px; margin: 0 auto; padding: 24px 16px 60px; }
+    .step-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 28px 24px;
+      display: none;
+      animation: fadeUp .35s ease;
+    }
+    .step-card.active { display: block; }
+    @keyframes fadeUp { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+    .step-tag { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent2); margin-bottom: 5px; }
+    .step-title { font-family: 'DM Serif Display', serif; font-size: 22px; color: #fff; line-height: 1.2; }
+    .step-desc { font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.6; }
+    .step-header { margin-bottom: 20px; }
+    .divider { height: 1px; background: var(--border); margin: 18px 0; }
+    .field { margin-bottom: 16px; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media(max-width:520px){ .field-row { grid-template-columns: 1fr; } }
+    label { display: block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    input[type=text], input[type=email], input[type=tel], input[type=number], select {
+      width: 100%; padding: 12px 14px;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: 'Sora', sans-serif; font-size: 14px;
+      outline: none; transition: border-color .2s, box-shadow .2s;
+    }
+    input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.14); }
+    input::placeholder { color: #3a5070; }
+    select option { background: #0d1f3c; }
+    .sino-group { display: flex; gap: 10px; }
+    .sino-btn {
+      flex: 1; padding: 11px;
+      background: var(--bg); border: 1.5px solid var(--border); border-radius: 12px;
+      color: var(--muted); font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: all .2s; text-align: center;
+    }
+    .sino-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+    .sino-btn.selected-si { border-color: var(--success); background: rgba(16,185,129,0.12); color: var(--success); }
+    .sino-btn.selected-no { border-color: #475569; background: rgba(71,85,105,0.14); color: #64748b; }
+    .q-block { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+    .q-text { font-size: 13px; color: var(--text); margin-bottom: 10px; line-height: 1.5; }
+    .check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+    .check-card {
+      display: flex; align-items: center; gap: 10px;
+      padding: 13px 14px;
+      background: var(--bg); border: 1.5px solid var(--border); border-radius: 12px;
+      cursor: pointer; transition: all .2s; user-select: none;
+    }
+    .check-card:hover { border-color: var(--accent2); }
+    .check-card.selected { border-color: var(--accent); background: rgba(59,130,246,0.1); }
+    .check-card input[type=checkbox] { display:none; }
+    .check-icon { width: 20px; height: 20px; border-radius: 6px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .2s; font-size: 12px; }
+    .check-card.selected .check-icon { background: var(--accent); border-color: var(--accent); }
+    .check-card-label { font-size: 13px; font-weight: 700; color: var(--text); }
+    .toggle-group { display: flex; flex-direction: column; gap: 10px; }
+    .toggle-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; background: var(--bg);
+      border: 1.5px solid var(--border); border-radius: 12px;
+      cursor: pointer; transition: all .2s; gap: 12px;
+    }
+    .toggle-item:hover { border-color: var(--accent2); }
+    .toggle-item.on { border-color: var(--accent); background: rgba(59,130,246,0.08); }
+    .toggle-label { font-size: 14px; font-weight: 700; color: var(--text); }
+    .toggle-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .toggle-switch { width: 42px; height: 23px; background: #1e3a5f; border-radius: 99px; position: relative; transition: background .2s; flex-shrink: 0; }
+    .toggle-switch::after { content: ''; position: absolute; width: 17px; height: 17px; background: #fff; border-radius: 50%; top: 3px; left: 3px; transition: transform .2s; }
+    .toggle-item.on .toggle-switch { background: var(--accent); }
+    .toggle-item.on .toggle-switch::after { transform: translateX(19px); }
+    .num-input-wrap { display: flex; align-items: center; max-width: 150px; }
+    .num-btn { width: 38px; height: 40px; background: var(--surface2); border: 1.5px solid var(--border); color: var(--text); font-size: 18px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .2s; flex-shrink: 0; }
+    .num-btn:first-child { border-radius: 10px 0 0 10px; }
+    .num-btn:last-child  { border-radius: 0 10px 10px 0; }
+    .num-btn:hover { background: var(--accent); }
+    .num-field { flex: 1; height: 40px; background: var(--bg); border: 1.5px solid var(--border); border-left: none; border-right: none; color: var(--text); font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700; text-align: center; outline: none; min-width: 44px; }
+    .curso-row {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 16px; background: var(--bg);
+      border: 1px solid var(--border); border-radius: 14px; margin-bottom: 10px; gap: 12px; flex-wrap: wrap;
+    }
+    .curso-info { flex: 1; min-width: 160px; }
+    .ci-name  { font-size: 14px; font-weight: 700; color: var(--text); }
+    .ci-price { font-size: 12px; color: var(--gold); margin-top: 2px; font-weight: 600; }
+    .ci-desc  { font-size: 12px; color: var(--muted); margin-top: 5px; line-height: 1.5; }
+    .ci-cert  { font-size: 11px; color: var(--accent2); margin-top: 4px; font-style: italic; }
+    .info-box {
+      background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.22);
+      border-radius: 12px; padding: 13px 15px;
+      font-size: 13px; color: var(--accent2); line-height: 1.6; margin-bottom: 14px;
+    }
+    .info-box.gold { background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.25); color: #fcd34d; }
+    .info-box.green { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.25); color: #6ee7b7; }
+    .rec-box {
+      background: rgba(245,158,11,0.06);
+      border: 1px solid rgba(245,158,11,0.2);
+      border-radius: 12px; padding: 13px 15px;
+      font-size: 12px; color: #fcd34d; line-height: 1.7; margin-bottom: 16px;
+    }
+    /* GRADOS */
+    .grado-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px; background: var(--bg);
+      border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; gap: 10px;
+    }
+    .grado-label { font-size: 13px; font-weight: 700; color: var(--text); min-width: 110px; }
+    .grado-input { width: 90px; padding: 8px 10px; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'Sora', sans-serif; font-size: 13px; text-align: center; outline: none; }
+    .grado-input:focus { border-color: var(--accent); }
+    /* RESUMEN */
+    .resumen-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 10px; }
+    .resumen-item:last-child { border-bottom: none; }
+    .ri-name { font-size: 13px; color: var(--text); flex: 1; }
+    .ri-qty  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .ri-val  { font-size: 14px; font-weight: 700; color: var(--accent2); white-space: nowrap; }
+    /* NAV */
+    .nav-row { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; gap: 10px; }
+    .btn { padding: 12px 22px; border: 0; border-radius: 12px; font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all .2s; display: inline-flex; align-items: center; gap: 8px; }
+    .btn-ghost { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+    .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), #1d4ed8); color: #fff; box-shadow: 0 4px 18px rgba(59,130,246,0.28); }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(59,130,246,0.38); }
+    .btn-primary:disabled { background: #1e3a5f; color: #3a5070; box-shadow: none; cursor: not-allowed; transform: none; }
+    .btn-success { background: linear-gradient(135deg, var(--success), #059669); color: #fff; box-shadow: 0 4px 18px rgba(16,185,129,0.28); }
+    .btn-success:hover { transform: translateY(-1px); }
+    .btn-success:disabled { background: #1e3a5f; color: #3a5070; box-shadow: none; cursor: not-allowed; transform: none; }
+    /* RESULT */
+    .result-card { background: var(--surface); border: 1px solid rgba(16,185,129,0.3); border-radius: 24px; padding: 34px 24px; text-align: center; display: none; }
+    .result-card.active { display: block; animation: fadeUp .4s ease; }
+    .result-icon { font-size: 52px; margin-bottom: 14px; }
+    .result-title { font-family: 'DM Serif Display', serif; font-size: 26px; color: #fff; margin-bottom: 8px; }
+    .result-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; line-height: 1.6; }
+    .result-code { display: inline-block; padding: 7px 18px; background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.3); border-radius: 99px; font-size: 17px; font-weight: 800; color: var(--accent2); margin-bottom: 24px; letter-spacing: .05em; }
+    .result-totals { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 24px; }
+    .rt-box { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 13px 8px; }
+    .rt-label { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 5px; }
+    .rt-val   { font-size: 17px; font-weight: 800; color: #fff; }
+    .rt-val.green { color: var(--success); }
+    .rt-val.gold  { color: var(--gold); }
+    .result-actions { display: flex; flex-direction: column; gap: 10px; }
+    .btn-wa { width: 100%; padding: 14px; background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff; border: 0; border-radius: 14px; font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all .2s; }
+    .btn-wa:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(34,197,94,0.38); }
+    .btn-pdf { width: 100%; padding: 13px; background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 14px; font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all .2s; }
+    .btn-pdf:hover { border-color: var(--accent2); color: var(--accent2); }
+    .loading-wrap { display: none; text-align: center; padding: 40px 20px; }
+    .loading-wrap.active { display: block; animation: fadeUp .3s ease; }
+    .spinner { width: 50px; height: 50px; border: 4px solid var(--surface2); border-top-color: var(--accent); border-radius: 50%; margin: 0 auto 18px; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-title { font-family: 'DM Serif Display', serif; font-size: 20px; color: #fff; margin-bottom: 8px; }
+    .loading-sub { font-size: 13px; color: var(--muted); }
+    .error-box { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 12px; padding: 13px 15px; font-size: 13px; color: #fca5a5; margin-top: 12px; display: none; }
+    .error-box.active { display: block; }
+    @media(max-width:480px){ .step-card { padding: 20px 14px; } .result-totals { grid-template-columns: 1fr; } }
+  </style>
 </head>
-
 <body>
 
-<div class="card">
-  <h1>Cotizador Método Zitro</h1>
-  <p>Compatible con iPhone · Android · PC</p>
-  <button onclick="abrir()">Abrir Cotizador</button>
+<header class="header">
+  <div class="logo-mark">Z</div>
+  <div>
+    <div class="logo-name">Método Zitro</div>
+    <div class="logo-sub">Programa Socioemocional Institucional</div>
+  </div>
+</header>
+
+<div class="progress-wrap">
+  <div class="step-labels" id="stepLabels"></div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
 </div>
 
+<main>
+
+<!-- STEP 1: INSTITUCIÓN -->
+<div class="step-card active" id="step1">
+  <div class="step-header">
+    <div class="step-tag">Paso 1 de 7</div>
+    <div class="step-title">Datos de la institución</div>
+    <div class="step-desc">Información del colegio y persona encargada del proceso.</div>
+  </div>
+  <div class="field-row">
+    <div class="field">
+      <label>Institución *</label>
+      <input type="text" id="institucion" placeholder="Nombre del colegio">
+    </div>
+    <div class="field">
+      <label>Ciudad / Municipio *</label>
+      <input type="text" id="ciudad" placeholder="Ciudad">
+    </div>
+  </div>
+  <div class="field">
+    <label>Nombre del encargado *</label>
+    <input type="text" id="encargado" placeholder="Nombre completo">
+  </div>
+  <div class="field-row">
+    <div class="field">
+      <label>WhatsApp *</label>
+      <input type="tel" id="whatsapp" placeholder="3123456789" maxlength="15">
+    </div>
+    <div class="field">
+      <label>Correo electrónico</label>
+      <input type="email" id="correo" placeholder="correo@colegio.edu.co">
+    </div>
+  </div>
+  <div class="error-box" id="err1">Por favor complete los campos obligatorios.</div>
+  <div class="nav-row">
+    <span></span>
+    <button class="btn btn-primary" onclick="goStep(2)">Continuar →</button>
+  </div>
+</div>
+
+<!-- STEP 2: AUTOEVALUACIÓN -->
+<div class="step-card" id="step2">
+  <div class="step-header">
+    <div class="step-tag">Paso 2 de 7</div>
+    <div class="step-title">Autoevaluación institucional</div>
+    <div class="step-desc">Responda "Sí" en los ítems que su institución necesita construir o fortalecer. (2 o más "Sí" activan la cotización de Fase 1 — Construcción).</div>
+  </div>
+  <div class="info-box">
+    💡 <strong>Fase 1 – Construcción</strong> se activa cuando la institución identifica 2 o más necesidades por atender.
+  </div>
+  <div class="q-block">
+    <div class="q-text">1. ¿Necesita protocolos documentados de atención socioemocional (rutas, procedimientos escritos)?</div>
+    <div class="sino-group" id="q1"></div>
+  </div>
+  <div class="q-block">
+    <div class="q-text">2. ¿Necesita fortalecer su comité de convivencia con actas y roles definidos?</div>
+    <div class="sino-group" id="q2"></div>
+  </div>
+  <div class="q-block">
+    <div class="q-text">3. ¿Necesita indicadores y seguimiento medible de clima escolar?</div>
+    <div class="sino-group" id="q3"></div>
+  </div>
+  <div class="q-block">
+    <div class="q-text">4. ¿Necesita procedimientos documentados de manejo de crisis emocionales?</div>
+    <div class="sino-group" id="q4"></div>
+  </div>
+  <div class="q-block">
+    <div class="q-text">5. ¿Necesita un programa curricular socioemocional verificable (cátedra, guía o parrilla)?</div>
+    <div class="sino-group" id="q5"></div>
+  </div>
+  <div class="q-block">
+    <div class="q-text">6. ¿Necesita reportes periódicos y evidencias de seguimiento al bienestar estudiantil?</div>
+    <div class="sino-group" id="q6"></div>
+  </div>
+  <div id="f1status" style="margin-top:12px;"></div>
+  <div class="error-box" id="err2">Por favor responda todas las preguntas.</div>
+  <div class="nav-row">
+    <button class="btn btn-ghost" onclick="goStep(1)">← Atrás</button>
+    <button class="btn btn-primary" onclick="goStep(3)">Continuar →</button>
+  </div>
+</div>
+
+<!-- STEP 3: CONVENIOS -->
+<div class="step-card" id="step3">
+  <div class="step-header">
+    <div class="step-tag">Paso 3 de 7</div>
+    <div class="step-title">Convenios institucionales</div>
+    <div class="step-desc">Seleccione el convenio o alianza de su institución. Cada convenio aporta un 20% de descuento sobre la Fase 1 (máx. 80%).</div>
+  </div>
+  <div class="info-box">
+    📌 El descuento de convenios aplica <strong>exclusivamente sobre el ítem Fase 1</strong>.
+  </div>
+  <div class="check-grid" id="conveniosGrid"></div>
+  <div class="nav-row">
+    <button class="btn btn-ghost" onclick="goStep(2)">← Atrás</button>
+    <button class="btn btn-primary" onclick="goStep(4)">Continuar →</button>
+  </div>
+</div>
+
+<!-- STEP 4: DIARIO DE ELIÁN -->
+<div class="step-card" id="step4">
+  <div class="step-header">
+    <div class="step-tag">Paso 4 de 7</div>
+    <div class="step-title">Diario de Elián</div>
+    <div class="step-desc">La implementación del Diario de Elián activa tarifas preferenciales en capacitación docente.</div>
+  </div>
+  <div class="info-box gold">
+    ⭐ Si selecciona el compromiso de implementación, accede a descuentos especiales en cursos docentes y queda habilitado para solicitar una clase presencial o virtual para su institución.
+  </div>
+  <div class="toggle-group">
+    <div class="toggle-item" id="togInteres" onclick="toggleItem('togInteres','interesDiario')">
+      <div>
+        <div class="toggle-label">📖 Interés en el Diario de Elián</div>
+        <div class="toggle-sub">Quiero conocer más sobre esta herramienta curricular socioemocional</div>
+      </div>
+      <div class="toggle-switch"></div>
+    </div>
+    <div class="toggle-item" id="togCompromiso" onclick="toggleItem('togCompromiso','compromisoDiario')">
+      <div>
+        <div class="toggle-label">✅ Compromiso de implementación</div>
+        <div class="toggle-sub">Me comprometo a implementarlo el próximo año lectivo como parrilla curricular</div>
+      </div>
+      <div class="toggle-switch"></div>
+    </div>
+  </div>
+  <div style="margin-top:14px;" id="diarioInfo"></div>
+  <div class="nav-row">
+    <button class="btn btn-ghost" onclick="goStep(3)">← Atrás</button>
+    <button class="btn btn-primary" onclick="goStep(5)">Continuar →</button>
+  </div>
+</div>
+
+<!-- STEP 5: CAPACITACIÓN DOCENTE -->
+<div class="step-card" id="step5">
+  <div class="step-header">
+    <div class="step-tag">Paso 5 de 7</div>
+    <div class="step-title">Capacitación docente</div>
+    <div class="step-desc">Indique la cantidad de docentes por nivel de capacitación. Los precios varían según la selección del Diario de Elián.</div>
+  </div>
+
+  <div class="rec-box">
+    📊 <strong>Recomendación:</strong> Por cada 200 alumnos, se recomienda contar con al menos <strong>4 docentes capacitados en Alfabetización y Habilidades Socioemocionales</strong>. Con esto ya se puede iniciar la pedagogía en la clase socioemocional. Se requiere que inicien el <strong>Diplomado</strong> el año en que la materia arranca en la institución, o completar la capacitación integral antes de implementarla.
+  </div>
+
+  <!-- Alfabetización -->
+  <div class="curso-row">
+    <div class="curso-info">
+      <div class="ci-name">📘 Alfabetización Socioemocional</div>
+      <div class="ci-price" id="priceAlfa">20 horas · $350.000 / docente</div>
+      <div class="ci-desc">Formación básica en conceptos, lenguaje y herramientas socioemocionales. Modalidad virtual o presencial con programación previa. Ideal como punto de entrada para docentes sin formación previa en el área.</div>
+    </div>
+    <div class="num-input-wrap">
+      <button class="num-btn" onclick="adjNum('alfa',-1)">−</button>
+      <input class="num-field" id="numAlfa" type="number" value="0" min="0">
+      <button class="num-btn" onclick="adjNum('alfa',1)">+</button>
+    </div>
+  </div>
+
+  <!-- Habilidades -->
+  <div class="curso-row">
+    <div class="curso-info">
+      <div class="ci-name">📗 Habilidades Socioemocionales</div>
+      <div class="ci-price" id="priceHab">50 horas · $450.000 / docente</div>
+      <div class="ci-desc">Desarrollo de competencias prácticas para la gestión emocional en el aula, resolución de conflictos y construcción de ambientes seguros. Modalidad virtual o presencial con programación previa.</div>
+    </div>
+    <div class="num-input-wrap">
+      <button class="num-btn" onclick="adjNum('hab',-1)">−</button>
+      <input class="num-field" id="numHab" type="number" value="0" min="0">
+      <button class="num-btn" onclick="adjNum('hab',1)">+</button>
+    </div>
+  </div>
+
+  <!-- Diplomado -->
+  <div class="curso-row">
+    <div class="curso-info">
+      <div class="ci-name">📙 Diplomado de Formación Emocional</div>
+      <div class="ci-price" id="priceDip">150 horas · $1.350.000 / docente</div>
+      <div class="ci-desc">Programa completo de formación en educación socioemocional. Modalidad virtual o presencial con programación previa.</div>
+      <div class="ci-cert">🎓 Incluye certificación de institución educativa con aval del Ministerio de Educación Nacional.</div>
+    </div>
+    <div class="num-input-wrap">
+      <button class="num-btn" onclick="adjNum('dip',-1)">−</button>
+      <input class="num-field" id="numDip" type="number" value="0" min="0">
+      <button class="num-btn" onclick="adjNum('dip',1)">+</button>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div style="margin-bottom:14px;">
+    <div class="step-title" style="font-size:18px; margin-bottom:5px;">Escuela de Padres</div>
+    <div class="step-desc">Capacitación con clase práctica acoplada al Programa Socioemocional Institucional. Incluye herramientas para que los padres acompañen el proceso formativo desde el hogar, articuladas con los contenidos del Diario de Elián y la cátedra socioemocional.</div>
+  </div>
+
+  <div class="info-box" style="margin-bottom:14px;">
+    💰 <strong>1 conferencia:</strong> incluida en tarifas del programa &nbsp;|&nbsp; <strong>2 conferencias:</strong> valor adicional según hoja de precios del sistema.
+  </div>
+
+  <div class="field">
+    <label>Número de conferencias</label>
+    <select id="padresConf">
+      <option value="0">No incluir</option>
+      <option value="1">1 conferencia — incluida en el programa</option>
+      <option value="2">2 conferencias</option>
+    </select>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn btn-ghost" onclick="goStep(4)">← Atrás</button>
+    <button class="btn btn-primary" onclick="goStep(6)">Continuar →</button>
+  </div>
+</div>
+
+<!-- STEP 6: EXTRAS -->
+<div class="step-card" id="step6">
+  <div class="step-header">
+    <div class="step-tag">Paso 6 de 7</div>
+    <div class="step-title">Servicios adicionales</div>
+    <div class="step-desc">Manual de Convivencia, Auditorías y Clase para Estudiantes/Padres/Maestros.</div>
+  </div>
+
+  <!-- Manual -->
+  <div class="toggle-item" id="togManual" onclick="toggleItem('togManual','incluirManual')" style="margin-bottom:8px;">
+    <div style="flex:1;">
+      <div class="toggle-label">📋 Manual de Convivencia</div>
+      <div class="toggle-sub">Incluye el componente emocional adaptado a los requerimientos legales solicitados en las normativas, a la medida de cumplimiento y ejecución de la institución.</div>
+    </div>
+    <div class="toggle-switch"></div>
+  </div>
+  <div class="info-box" style="margin-bottom:16px;" id="manualPriceBox">
+    💰 Precio normal: <strong>$1.100.000</strong> · Con convenio OBED o ACSI: <strong>$500.000</strong>
+  </div>
+
+  <!-- Auditorías -->
+  <div class="field" style="margin-bottom:20px;">
+    <label>🔍 Auditorías / Informes Externos (Fase 3)</label>
+    <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:4px;">
+      <div class="num-input-wrap">
+        <button class="num-btn" onclick="adjNum('aud',-1)">−</button>
+        <input class="num-field" id="numAud" type="number" value="0" min="0">
+        <button class="num-btn" onclick="adjNum('aud',1)">+</button>
+      </div>
+      <div style="font-size:13px; color:var(--muted);" id="audPrice">$450.000 c/u (tarifa normal)</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Clase SPM -->
+  <div style="margin-bottom:14px;">
+    <div class="step-title" style="font-size:17px; margin-bottom:5px;">🎓 Solicitud de Clase Gratuita</div>
+    <div class="step-desc" style="color:#6ee7b7;">Para docentes, estudiantes y comunidad educativa. Esta clase permite vivir y conocer la experiencia del contenido de <strong>El Diario de Elián</strong> con todas sus herramientas. <em>¡Permítete vivir esta experiencia transformadora!</em></div>
+  </div>
+
+  <div class="info-box green" style="margin-bottom:16px;">
+    📌 Ingrese la cantidad de estudiantes por aula para preparar la clase. Se asignan <strong>30 cupos incluidos</strong> (hasta 249 estudiantes) o <strong>50 cupos</strong> (250 o más). Cupos adicionales: <strong>$7.500 c/u</strong> (incluye kit estudiante).
+  </div>
+
+  <div style="margin-bottom:10px; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted);">Estudiantes por grado</div>
+
+  <div class="grado-row"><div class="grado-label">🟡 Kínder</div><input class="grado-input" id="gKinder" type="number" min="0" placeholder="0" oninput="updateClase()"></div>
+  <div class="grado-row"><div class="grado-label">🟠 Transición</div><input class="grado-input" id="gTransicion" type="number" min="0" placeholder="0" oninput="updateClase()"></div>
+  <div class="grado-row"><div class="grado-label">🔵 Primero</div><input class="grado-input" id="gPrimero" type="number" min="0" placeholder="0" oninput="updateClase()"></div>
+  <div class="grado-row"><div class="grado-label">🟢 Segundo</div><input class="grado-input" id="gSegundo" type="number" min="0" placeholder="0" oninput="updateClase()"></div>
+  <div class="grado-row"><div class="grado-label">🔴 Tercero</div><input class="grado-input" id="gTercero" type="number" min="0" placeholder="0" oninput="updateClase()"></div>
+  <div class="grado-row"><div class="grado-label">🟣 Cuarto</div><input class="grado-input" id="gCuarto" type="number" min="0" placeholder="0" oninput="updateClase()"></div>
+  <div class="grado-row"><div class="grado-label">⚪ Quinto</div><input class="grado-input" id="gQuinto" type="number" min="0" placeholder="0" oninput="updateClase()"></div>
+
+  <div id="cuposInfo" style="display:none; margin-top:14px;">
+    <div class="info-box green" id="cuposMsg"></div>
+    <div class="field" style="margin-top:10px;">
+      <label>Cupos adicionales (opcionales)</label>
+      <div class="num-input-wrap">
+        <button class="num-btn" onclick="adjNum('cuposAdd',-1)">−</button>
+        <input class="num-field" id="numCuposAdd" type="number" value="0" min="0">
+        <button class="num-btn" onclick="adjNum('cuposAdd',1)">+</button>
+      </div>
+    </div>
+    <div class="field-row" style="margin-top:10px;">
+      <div class="field">
+        <label>Nombre coordinador</label>
+        <input type="text" id="coordNombre" placeholder="Nombre del coordinador">
+      </div>
+      <div class="field">
+        <label>WhatsApp coordinador</label>
+        <input type="tel" id="coordWa" placeholder="3123456789">
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="btn btn-ghost" onclick="goStep(5)">← Atrás</button>
+    <button class="btn btn-primary" onclick="goStep(7)">Ver resumen →</button>
+  </div>
+</div>
+
+<!-- STEP 7: RESUMEN -->
+<div class="step-card" id="step7">
+  <div class="step-header">
+    <div class="step-tag">Paso 7 de 7</div>
+    <div class="step-title">Resumen de cotización</div>
+    <div class="step-desc">Revise los datos antes de generar su cotización. Al confirmar se enviará el PDF al correo y recibirá el enlace de WhatsApp.</div>
+  </div>
+  <div id="resumenContent"></div>
+  <div class="error-box" id="errFinal">Error al generar la cotización. Por favor intente de nuevo.</div>
+  <div class="nav-row">
+    <button class="btn btn-ghost" onclick="goStep(6)">← Editar</button>
+    <button class="btn btn-success" id="btnGenerar" onclick="generarCotizacion()">⚡ Generar cotización</button>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-wrap" id="loadingWrap">
+  <div class="spinner"></div>
+  <div class="loading-title">Generando su cotización...</div>
+  <div class="loading-sub">Procesando datos, creando el PDF y preparando su mensaje de WhatsApp.</div>
+</div>
+
+<!-- RESULTADO -->
+<div class="result-card" id="resultCard">
+  <div class="result-icon">🎉</div>
+  <div class="result-title">¡Cotización generada!</div>
+  <div class="result-sub">Su cotización ha sido enviada al correo registrado. Abra WhatsApp o descargue el PDF.</div>
+  <div class="result-code" id="resultCode">PS-00000</div>
+  <div class="result-totals">
+    <div class="rt-box"><div class="rt-label">Subtotal</div><div class="rt-val" id="rSubtotal">$0</div></div>
+    <div class="rt-box"><div class="rt-label">Descuento</div><div class="rt-val green" id="rDescuento">$0</div></div>
+    <div class="rt-box"><div class="rt-label">Total</div><div class="rt-val gold" id="rTotal">$0</div></div>
+  </div>
+  <div class="result-actions">
+    <a class="btn-wa" id="btnWa" href="#" target="_blank">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      Abrir en WhatsApp
+    </a>
+    <a class="btn-pdf" id="btnPdf" href="#" target="_blank">📄 Descargar PDF</a>
+    <button class="btn btn-ghost" style="width:100%;justify-content:center;" onclick="location.reload()">Nueva cotización</button>
+  </div>
+</div>
+
+</main>
+
 <script>
-const URL_COTIZADOR =
-"https://script.google.com/macros/s/AKfycbzCzL7Md2RpY3F4LCpcu6hNSSdgd_6kch5f0Lqjh-kLzHA1gSwSZTSjyRUIbFf0VO9H/exec";
+// ============================================================
+// URL GS PRINCIPAL
+// ============================================================
+const API_URL = "https://script.google.com/macros/s/AKfycbzD-7bpb-IQN8cewYMk8O9LoXFlaie0ve3gOPJc-hL7kDGi5u0RekoCSTeseyveclUp/exec";
 
-function abrir(){
-  window.location.href = URL_COTIZADOR;
+// ============================================================
+// ESTADO
+// ============================================================
+const state = {
+  currentStep: 1,
+  answers: {1:"",2:"",3:"",4:"",5:"",6:""},
+  convenios: [],
+  interesDiario: false,
+  compromisoDiario: false,
+  incluirManual: false
+};
+
+const STEPS_META = [
+  {label:"Institución"},{label:"Fase 1"},{label:"Convenios"},
+  {label:"Diario"},{label:"Docentes"},{label:"Extras"},{label:"Resumen"}
+];
+
+const CONVENIOS_LIST = ["OBED","ACSI","HIDEKEL"];
+
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+  buildStepLabels();
+  buildConvenios();
+  buildSiNo();
+  updateProgress();
 }
-</script>
 
+function buildStepLabels() {
+  const w = document.getElementById('stepLabels');
+  STEPS_META.forEach((m,i) => {
+    const n = i+1;
+    const d = document.createElement('div');
+    d.className = 'step-dot' + (n===1?' active':'');
+    d.id = 'sdot'+n;
+    d.innerHTML = `<div class="dot">${n}</div><div class="step-label">${m.label}</div>`;
+    w.appendChild(d);
+  });
+}
+
+function buildConvenios() {
+  const g = document.getElementById('conveniosGrid');
+  CONVENIOS_LIST.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'check-card';
+    d.id = 'conv_'+c;
+    d.innerHTML = `<input type="checkbox"><div class="check-icon" id="ci_${c}"></div><div class="check-card-label">${c}</div>`;
+    d.onclick = () => toggleConvenio(c, d);
+    g.appendChild(d);
+  });
+}
+
+function buildSiNo() {
+  for (let i=1; i<=6; i++) {
+    const g = document.getElementById('q'+i);
+    ['SI','NO'].forEach(v => {
+      const b = document.createElement('button');
+      b.className = 'sino-btn';
+      b.textContent = v;
+      b.onclick = () => setSiNo(i, v, b, g);
+      g.appendChild(b);
+    });
+  }
+}
+
+// ============================================================
+// NAVEGACIÓN
+// ============================================================
+function goStep(n) {
+  if (n > state.currentStep && !validateStep(state.currentStep)) return;
+  document.getElementById('step'+state.currentStep)?.classList.remove('active');
+  state.currentStep = n;
+  document.getElementById('step'+n)?.classList.add('active');
+  updateProgress();
+  if (n===5) updatePrices();
+  if (n===6) updateAud();
+  if (n===7) buildResumen();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function updateProgress() {
+  const pct = ((state.currentStep-1)/6)*100;
+  document.getElementById('progressFill').style.width = pct+'%';
+  for (let i=1; i<=7; i++) {
+    const d = document.getElementById('sdot'+i);
+    if (!d) continue;
+    d.classList.remove('active','done');
+    if (i===state.currentStep) d.classList.add('active');
+    else if (i<state.currentStep) d.classList.add('done');
+    const dot = d.querySelector('.dot');
+    dot.innerHTML = i<state.currentStep ? '✓' : i;
+  }
+}
+
+// ============================================================
+// VALIDACIONES
+// ============================================================
+function validateStep(n) {
+  if (n===1) {
+    const ok = val('institucion')&&val('encargado')&&val('whatsapp')&&val('ciudad');
+    showErr('err1',!ok); return ok;
+  }
+  if (n===2) {
+    const all = Object.values(state.answers).every(v=>v==='SI'||v==='NO');
+    showErr('err2',!all); return all;
+  }
+  return true;
+}
+function val(id){ return (document.getElementById(id)?.value?.trim()||'')!==''; }
+function showErr(id,show){ document.getElementById(id)?.classList.toggle('active',show); }
+
+// ============================================================
+// PASO 2 — SI/NO
+// ============================================================
+function setSiNo(q,v,btn,group) {
+  state.answers[q]=v;
+  group.querySelectorAll('.sino-btn').forEach(b=>b.classList.remove('selected-si','selected-no'));
+  btn.classList.add(v==='SI'?'selected-si':'selected-no');
+  updateF1Status();
+}
+function updateF1Status() {
+  const count = Object.values(state.answers).filter(v=>v==='SI').length;
+  const el = document.getElementById('f1status');
+  if (!el) return;
+  if (Object.values(state.answers).some(v=>!v)){ el.innerHTML=''; return; }
+  const activa = count>=2;
+  el.innerHTML=`<div class="info-box ${activa?'':'gold'}">
+    ${activa
+      ? `✅ <strong>Fase 1 activada</strong>: se identificaron ${count} necesidades de intervención.`
+      : `⚠️ Solo ${count} ítem(s) marcados. Se requieren al menos 2 para activar Fase 1.`}
+  </div>`;
+}
+
+// ============================================================
+// PASO 3 — CONVENIOS
+// ============================================================
+function toggleConvenio(c,el) {
+  const idx = state.convenios.indexOf(c);
+  if (idx>=0){
+    state.convenios.splice(idx,1);
+    el.classList.remove('selected');
+    document.getElementById('ci_'+c).textContent='';
+  } else {
+    if(state.convenios.length>=4) return;
+    state.convenios.push(c);
+    el.classList.add('selected');
+    document.getElementById('ci_'+c).textContent='✓';
+  }
+}
+
+// ============================================================
+// PASO 4 — DIARIO
+// ============================================================
+function toggleItem(elemId, stateKey) {
+  state[stateKey]=!state[stateKey];
+  document.getElementById(elemId).classList.toggle('on',state[stateKey]);
+  if(elemId==='togInteres'||elemId==='togCompromiso') updateDiarioInfo();
+  if(state.currentStep===5) updatePrices();
+}
+function updateDiarioInfo() {
+  const el = document.getElementById('diarioInfo');
+  if(!el) return;
+  const d = state.interesDiario||state.compromisoDiario;
+  if(!d){el.innerHTML='';return;}
+  const isComp = state.compromisoDiario;
+  el.innerHTML=`<div class="info-box gold">
+    ${isComp
+      ? '⭐ Con compromiso activa: <strong>Alfabetización $0</strong> · <strong>Habilidades $150.000</strong> · <strong>Diplomado $850.000</strong>.'
+      : '👀 Solo interés declarado. Las tarifas preferenciales requieren compromiso de implementación.'}
+  </div>`;
+}
+
+// ============================================================
+// PASO 5 — PRECIOS
+// ============================================================
+function adjNum(key,delta) {
+  const map={alfa:'numAlfa',hab:'numHab',dip:'numDip',aud:'numAud',cuposAdd:'numCuposAdd'};
+  const el=document.getElementById(map[key]);
+  if(!el) return;
+  el.value=Math.max(0,(parseInt(el.value)||0)+delta);
+  if(key==='aud') updateAud();
+}
+function updatePrices() {
+  const d=state.compromisoDiario;
+  document.getElementById('priceAlfa').textContent=`20 horas · ${d?'$0 (tarifa Diario de Elián)':'$350.000'} / docente`;
+  document.getElementById('priceHab').textContent =`50 horas · ${d?'$150.000 (tarifa Diario de Elián)':'$450.000'} / docente`;
+  document.getElementById('priceDip').textContent =`150 horas · ${d?'$850.000 (tarifa Diario de Elián)':'$1.350.000'} / docente`;
+}
+
+// ============================================================
+// PASO 6 — EXTRAS
+// ============================================================
+function updateAud() {
+  const fase1 = Object.values(state.answers).filter(v=>v==='SI').length>=2;
+  const el=document.getElementById('audPrice');
+  if(el) el.textContent=fase1?'$150.000 c/u (tarifa preferencial por cotizar Fase 1)':'$450.000 c/u (tarifa normal)';
+}
+
+function totalEstudiantes() {
+  return ['Kinder','Transicion','Primero','Segundo','Tercero','Cuarto','Quinto']
+    .reduce((acc,g)=>acc+(parseInt(document.getElementById('g'+g)?.value||0)||0),0);
+}
+
+function updateClase() {
+  const total = totalEstudiantes();
+  const info=document.getElementById('cuposInfo');
+  const msg=document.getElementById('cuposMsg');
+  if(!total){if(info)info.style.display='none';return;}
+  if(info) info.style.display='block';
+  const cupos=total>=250?50:30;
+  if(msg) msg.innerHTML=`🎓 Total estudiantes: <strong>${total}</strong> → <strong>${cupos} cupos incluidos</strong> en la clase gratuita.`;
+}
+
+// ============================================================
+// PASO 7 — RESUMEN
+// ============================================================
+function buildResumen() {
+  const d=state.compromisoDiario;
+  const hasOA=state.convenios.includes('OBED')||state.convenios.includes('ACSI');
+  const fase1=Object.values(state.answers).filter(v=>v==='SI').length>=2;
+  const qAlfa=parseInt(document.getElementById('numAlfa')?.value||0);
+  const qHab=parseInt(document.getElementById('numHab')?.value||0);
+  const qDip=parseInt(document.getElementById('numDip')?.value||0);
+  const qAud=parseInt(document.getElementById('numAud')?.value||0);
+  const qCuposAdd=parseInt(document.getElementById('numCuposAdd')?.value||0);
+  const padres=parseInt(document.getElementById('padresConf')?.value||0);
+  const totalInst=totalEstudiantes();
+
+  let items=[];
+  if(fase1) items.push({name:'Fase 1 — Construcción del Programa',qty:1,sub:'Protocolos, ruta, gobernanza y documentación'});
+  if(state.incluirManual) items.push({name:'Manual de Convivencia',qty:1,sub:hasOA?'Tarifa especial OBED/ACSI: $500.000':'Tarifa normal: $1.100.000'});
+  if(qAlfa>0) items.push({name:'Curso Alfabetización Socioemocional',qty:qAlfa,sub:d?'$0/docente (Diario de Elián)':'$350.000/docente'});
+  if(qHab>0)  items.push({name:'Curso Habilidades Socioemocionales',qty:qHab,sub:d?'$150.000/docente (Diario de Elián)':'$450.000/docente'});
+  if(qDip>0)  items.push({name:'Diplomado Formación Emocional',qty:qDip,sub:d?'$850.000/docente (Diario de Elián)':'$1.350.000/docente'});
+  if(padres===1) items.push({name:'Escuela de Padres — 1 conferencia',qty:1});
+  if(padres===2) items.push({name:'Escuela de Padres — 2 conferencias',qty:1});
+  if(qAud>0)  items.push({name:'Auditorías / Informes Externos',qty:qAud,sub:fase1?'Tarifa preferencial Fase 1':'Tarifa normal'});
+  if(totalInst>0) {
+    const cupos=totalInst>=250?50:30;
+    items.push({name:'Clase Gratuita — Estudiantes + Padres + Maestros',qty:cupos,sub:'Cupos incluidos según matrícula'});
+  }
+  if(qCuposAdd>0) items.push({name:'Cupos adicionales clase',qty:qCuposAdd,sub:'$7.500/cupo (incluye kit estudiante)'});
+
+  let html=`<div style="margin-bottom:16px;">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em;">Institución</div>
+    <div style="font-size:16px;font-weight:700;color:#fff;">${document.getElementById('institucion')?.value||''}</div>
+    <div style="font-size:13px;color:var(--muted);">${document.getElementById('encargado')?.value||''} · ${document.getElementById('ciudad')?.value||''}</div>
+  </div><div class="divider"></div><div style="margin:14px 0;">`;
+
+  if(state.convenios.length){
+    html+=`<div style="margin-bottom:10px;"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">Convenios — ${state.convenios.length*20}% descuento sobre Fase 1</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">${state.convenios.map(c=>`<span style="padding:4px 10px;background:rgba(59,130,246,0.15);border:1px solid var(--accent);border-radius:99px;font-size:12px;font-weight:700;color:var(--accent2);">${c}</span>`).join('')}</div></div>`;
+  }
+  if(state.compromisoDiario){
+    html+=`<div style="margin-bottom:10px;"><span style="padding:5px 12px;background:rgba(245,158,11,0.15);border:1px solid var(--gold);border-radius:99px;font-size:12px;font-weight:700;color:var(--gold);">⭐ Compromiso Diario de Elián</span></div>`;
+  }
+
+  items.forEach(it=>{
+    html+=`<div class="resumen-item">
+      <div class="ri-name">${it.name}${it.sub?`<div class="ri-qty">${it.sub}</div>`:''}</div>
+      <div class="ri-val">×${it.qty}</div>
+    </div>`;
+  });
+
+  if(!items.length) html+=`<div style="color:var(--muted);font-size:14px;padding:12px 0;">No se han seleccionado ítems.</div>`;
+
+  html+=`</div><div class="info-box">💡 Los totales exactos son calculados por el sistema al generar la cotización oficial.</div>`;
+  document.getElementById('resumenContent').innerHTML=html;
+}
+
+// ============================================================
+// GENERAR COTIZACIÓN — GET con payload (fix CORS)
+// ============================================================
+async function generarCotizacion() {
+  showErr('errFinal',false);
+  const totalInst=totalEstudiantes();
+
+  const payload = {
+    responsable: {
+      encargado:   document.getElementById('encargado')?.value?.trim()||'',
+      institucion: document.getElementById('institucion')?.value?.trim()||'',
+      ciudad:      document.getElementById('ciudad')?.value?.trim()||'',
+      whatsapp:    document.getElementById('whatsapp')?.value?.trim()||'',
+      correo:      document.getElementById('correo')?.value?.trim()||''
+    },
+    auto: {
+      answers: {
+        "1":state.answers[1]||'NO',"2":state.answers[2]||'NO',
+        "3":state.answers[3]||'NO',"4":state.answers[4]||'NO',
+        "5":state.answers[5]||'NO',"6":state.answers[6]||'NO'
+      }
+    },
+    extras: {
+      conveniosSeleccionados: state.convenios,
+      interesDiarioElian:    state.interesDiario,
+      compromisoDiarioElian: state.compromisoDiario,
+      incluirManual:         state.incluirManual,
+      cursosDocentes: {
+        alfabetizacion: parseInt(document.getElementById('numAlfa')?.value||0),
+        habilidades:    parseInt(document.getElementById('numHab')?.value||0),
+        diplomado:      parseInt(document.getElementById('numDip')?.value||0)
+      },
+      padresConferencias: parseInt(document.getElementById('padresConf')?.value||0),
+      auditorias:         parseInt(document.getElementById('numAud')?.value||0),
+      claseSPM: {
+        totalInstitucion:   totalInst,
+        cuposSeleccionados: totalInst>=250?50:30,
+        cuposAdicionales:   parseInt(document.getElementById('numCuposAdd')?.value||0),
+        gradosDetalle: {
+          kinder:     parseInt(document.getElementById('gKinder')?.value||0),
+          transicion: parseInt(document.getElementById('gTransicion')?.value||0),
+          primero:    parseInt(document.getElementById('gPrimero')?.value||0),
+          segundo:    parseInt(document.getElementById('gSegundo')?.value||0),
+          tercero:    parseInt(document.getElementById('gTercero')?.value||0),
+          cuarto:     parseInt(document.getElementById('gCuarto')?.value||0),
+          quinto:     parseInt(document.getElementById('gQuinto')?.value||0)
+        },
+        coordinador: {
+          nombre:   document.getElementById('coordNombre')?.value?.trim()||'',
+          whatsapp: document.getElementById('coordWa')?.value?.trim()||''
+        }
+      }
+    }
+  };
+
+  document.getElementById('step7').classList.remove('active');
+  document.getElementById('loadingWrap').classList.add('active');
+
+  try {
+    // ✅ Usamos GET con payload como parámetro para evitar CORS de Apps Script
+    const url = API_URL + '?payload=' + encodeURIComponent(JSON.stringify(payload));
+    const res = await fetch(url, { method: 'GET' });
+    const data = await res.json();
+
+    document.getElementById('loadingWrap').classList.remove('active');
+    if (!data.ok) throw new Error(data.error||'Error desconocido del servidor');
+
+    document.getElementById('resultCode').textContent  = data.quoteId||'';
+    document.getElementById('rSubtotal').textContent   = '$'+fmtCOP(data.subtotal);
+    document.getElementById('rDescuento').textContent  = '$'+fmtCOP(data.descuento);
+    document.getElementById('rTotal').textContent      = '$'+fmtCOP(data.total);
+    if(data.whatsappUrl) document.getElementById('btnWa').href  = data.whatsappUrl;
+    if(data.pdfUrl)      document.getElementById('btnPdf').href = data.pdfUrl;
+
+    document.getElementById('resultCard').classList.add('active');
+    window.scrollTo({top:0,behavior:'smooth'});
+
+  } catch(err) {
+    document.getElementById('loadingWrap').classList.remove('active');
+    document.getElementById('step7').classList.add('active');
+    document.getElementById('errFinal').textContent = '❌ '+err.message;
+    showErr('errFinal',true);
+  }
+}
+
+function fmtCOP(n){ return Number(n||0).toLocaleString('es-CO'); }
+
+init();
+</script>
 </body>
 </html>

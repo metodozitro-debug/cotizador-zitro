@@ -956,75 +956,116 @@ function buildResumen() {
   document.getElementById('resumenContent').innerHTML=html;
 }
 
-async function generarCotizacion() {
-  showErr('errFinal',false);
-  const totalInst=totalEstudiantes();
-
-  const payload={
-    responsable:{
-      encargado:document.getElementById('encargado')?.value?.trim()||'',
-      institucion:document.getElementById('institucion')?.value?.trim()||'',
-      ciudad:document.getElementById('ciudad')?.value?.trim()||'',
-      whatsapp:document.getElementById('whatsapp')?.value?.trim()||'',
-      correo:document.getElementById('correo')?.value?.trim()||''
+function buildPayload() {
+  const totalInst = totalEstudiantes();
+  return {
+    responsable: {
+      encargado:   document.getElementById('encargado')?.value?.trim()||'',
+      institucion: document.getElementById('institucion')?.value?.trim()||'',
+      ciudad:      document.getElementById('ciudad')?.value?.trim()||'',
+      whatsapp:    document.getElementById('whatsapp')?.value?.trim()||'',
+      correo:      document.getElementById('correo')?.value?.trim()||''
     },
-    auto:{answers:{"1":state.answers[1]||'NO',"2":state.answers[2]||'NO',"3":state.answers[3]||'NO',"4":state.answers[4]||'NO',"5":state.answers[5]||'NO',"6":state.answers[6]||'NO'}},
-    extras:{
-      conveniosSeleccionados:state.convenios,
-      interesDiarioElian:state.interesDiario,
-      compromisoDiarioElian:state.compromisoDiario,
-      incluirManual:state.incluirManual,
-      cursosDocentes:{
-        alfabetizacion:parseInt(document.getElementById('numAlfa')?.value||0),
-        habilidades:parseInt(document.getElementById('numHab')?.value||0),
-        diplomado:parseInt(document.getElementById('numDip')?.value||0)
+    auto: { answers: {"1":state.answers[1]||'NO',"2":state.answers[2]||'NO',"3":state.answers[3]||'NO',"4":state.answers[4]||'NO',"5":state.answers[5]||'NO',"6":state.answers[6]||'NO'} },
+    extras: {
+      conveniosSeleccionados: state.convenios,
+      interesDiarioElian:    state.interesDiario,
+      compromisoDiarioElian: state.compromisoDiario,
+      incluirManual:         state.incluirManual,
+      cursosDocentes: {
+        alfabetizacion: parseInt(document.getElementById('numAlfa')?.value||0),
+        habilidades:    parseInt(document.getElementById('numHab')?.value||0),
+        diplomado:      parseInt(document.getElementById('numDip')?.value||0)
       },
-      padresConferencias:parseInt(document.getElementById('padresConf')?.value||0),
-      auditorias:parseInt(document.getElementById('numAud')?.value||0),
-      claseSPM:{
-        totalInstitucion:totalInst,
-        cuposSeleccionados:totalInst>=250?50:30,
-        cuposAdicionales:parseInt(document.getElementById('numCuposAdd')?.value||0),
-        gradosDetalle:{
-          kinder:parseInt(document.getElementById('gKinder')?.value||0),
-          transicion:parseInt(document.getElementById('gTransicion')?.value||0),
-          primero:parseInt(document.getElementById('gPrimero')?.value||0),
-          segundo:parseInt(document.getElementById('gSegundo')?.value||0),
-          tercero:parseInt(document.getElementById('gTercero')?.value||0),
-          cuarto:parseInt(document.getElementById('gCuarto')?.value||0),
-          quinto:parseInt(document.getElementById('gQuinto')?.value||0)
+      padresConferencias: parseInt(document.getElementById('padresConf')?.value||0),
+      auditorias:         parseInt(document.getElementById('numAud')?.value||0),
+      claseSPM: {
+        totalInstitucion:   totalInst,
+        cuposSeleccionados: totalInst>=250?50:30,
+        cuposAdicionales:   parseInt(document.getElementById('numCuposAdd')?.value||0),
+        gradosDetalle: {
+          kinder:     parseInt(document.getElementById('gKinder')?.value||0),
+          transicion: parseInt(document.getElementById('gTransicion')?.value||0),
+          primero:    parseInt(document.getElementById('gPrimero')?.value||0),
+          segundo:    parseInt(document.getElementById('gSegundo')?.value||0),
+          tercero:    parseInt(document.getElementById('gTercero')?.value||0),
+          cuarto:     parseInt(document.getElementById('gCuarto')?.value||0),
+          quinto:     parseInt(document.getElementById('gQuinto')?.value||0)
         },
-        coordinador:{
-          nombre:document.getElementById('coordNombre')?.value?.trim()||'',
-          whatsapp:document.getElementById('coordWa')?.value?.trim()||''
+        coordinador: {
+          nombre:   document.getElementById('coordNombre')?.value?.trim()||'',
+          whatsapp: document.getElementById('coordWa')?.value?.trim()||''
         }
       }
     }
   };
+}
+
+// JSONP — único método que funciona con Apps Script sin CORS
+function callJsonp(url, params, onSuccess, onError) {
+  const cbName = 'zitro_cb_' + Date.now();
+  const timeout = setTimeout(() => {
+    cleanup();
+    onError(new Error('Tiempo de espera agotado. Verifique su conexión.'));
+  }, 30000);
+
+  function cleanup() {
+    clearTimeout(timeout);
+    delete window[cbName];
+    const s = document.getElementById('__jsonp_script__');
+    if (s) s.remove();
+  }
+
+  window[cbName] = function(data) {
+    cleanup();
+    onSuccess(data);
+  };
+
+  const fullUrl = url + '?callback=' + cbName + '&payload=' + encodeURIComponent(JSON.stringify(params));
+  const script = document.createElement('script');
+  script.id = '__jsonp_script__';
+  script.src = fullUrl;
+  script.onerror = function() {
+    cleanup();
+    onError(new Error('No se pudo conectar con el servidor. Intente de nuevo.'));
+  };
+  document.head.appendChild(script);
+}
+
+function generarCotizacion() {
+  showErr('errFinal', false);
+  const payload = buildPayload();
 
   document.getElementById('step7').classList.remove('active');
   document.getElementById('loadingWrap').classList.add('active');
 
-  try {
-    const url=API_URL+'?payload='+encodeURIComponent(JSON.stringify(payload));
-    const res=await fetch(url,{method:'GET'});
-    const data=await res.json();
-    document.getElementById('loadingWrap').classList.remove('active');
-    if(!data.ok) throw new Error(data.error||'Error desconocido del servidor');
-    document.getElementById('resultCode').textContent=data.quoteId||'';
-    document.getElementById('rSubtotal').textContent='$'+fmtCOP(data.subtotal);
-    document.getElementById('rDescuento').textContent='$'+fmtCOP(data.descuento);
-    document.getElementById('rTotal').textContent='$'+fmtCOP(data.total);
-    if(data.whatsappUrl) document.getElementById('btnWa').href=data.whatsappUrl;
-    if(data.pdfUrl)      document.getElementById('btnPdf').href=data.pdfUrl;
-    document.getElementById('resultCard').classList.add('active');
-    window.scrollTo({top:0,behavior:'smooth'});
-  } catch(err) {
-    document.getElementById('loadingWrap').classList.remove('active');
-    document.getElementById('step7').classList.add('active');
-    document.getElementById('errFinal').textContent='❌ '+err.message;
-    showErr('errFinal',true);
-  }
+  callJsonp(
+    API_URL,
+    payload,
+    function(data) {
+      document.getElementById('loadingWrap').classList.remove('active');
+      if (!data.ok) {
+        document.getElementById('step7').classList.add('active');
+        document.getElementById('errFinal').textContent = '❌ ' + (data.error || 'Error del servidor');
+        showErr('errFinal', true);
+        return;
+      }
+      document.getElementById('resultCode').textContent  = data.quoteId || '';
+      document.getElementById('rSubtotal').textContent   = '$' + fmtCOP(data.subtotal);
+      document.getElementById('rDescuento').textContent  = '$' + fmtCOP(data.descuento);
+      document.getElementById('rTotal').textContent      = '$' + fmtCOP(data.total);
+      if (data.whatsappUrl) document.getElementById('btnWa').href  = data.whatsappUrl;
+      if (data.pdfUrl)      document.getElementById('btnPdf').href = data.pdfUrl;
+      document.getElementById('resultCard').classList.add('active');
+      window.scrollTo({top:0,behavior:'smooth'});
+    },
+    function(err) {
+      document.getElementById('loadingWrap').classList.remove('active');
+      document.getElementById('step7').classList.add('active');
+      document.getElementById('errFinal').textContent = '❌ ' + err.message;
+      showErr('errFinal', true);
+    }
+  );
 }
 
 function fmtCOP(n){return Number(n||0).toLocaleString('es-CO');}

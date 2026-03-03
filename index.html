@@ -542,7 +542,11 @@
     <div class="step-title">Convenios institucionales</div>
     <div class="step-desc">Seleccione el convenio o alianza de su institución. Cada convenio aporta un 20% de descuento sobre la Fase 1 (máx. 80%).</div>
   </div>
-  <div class="info-box">📌 El descuento aplica <strong>exclusivamente sobre el ítem Fase 1</strong>.</div>
+  <div class="info-box">
+    📌 Descuentos acumulables sobre <strong>Fase 1 y Auditorías</strong>:<br>
+    🔹 OBED: <strong>15%</strong> &nbsp;·&nbsp; 🔹 ACSI: <strong>15%</strong> &nbsp;·&nbsp; 🔹 HIDEKEL: <strong>20%</strong><br>
+    Los tres juntos = <strong>50% de descuento</strong> sobre esos ítems.
+  </div>
   <div class="check-grid" id="conveniosGrid"></div>
   <div class="nav-row">
     <button class="btn btn-ghost" onclick="goStep(2)">← Atrás</button>
@@ -906,54 +910,197 @@ function updateClase() {
   if(msg) msg.innerHTML=`🎓 Total estudiantes: <strong>${total}</strong> → <strong>${cupos} cupos incluidos</strong> en la clase gratuita.`;
 }
 
+// ============================================================
+// LÓGICA DE DESCUENTOS (espejo del GS)
+// OBED=15%, ACSI=15%, HIDEKEL=20% — sobre Fase1 + Auditorías
+// ============================================================
+const PRECIOS_LOCAL = {
+  fase1: 3200000,        // referencia — el GS lee de la hoja PRECIOS
+  manual_normal: 1100000,
+  manual_obed_acsi: 500000,
+  alfa_normal: 350000,   alfa_diario: 0,
+  hab_normal:  450000,   hab_diario:  150000,
+  dip_normal: 1350000,   dip_diario:  850000,
+  aud_normal:  450000,
+  padres1: 350000,       padres2: 600000,
+  cupo_add: 7500
+};
+
+function calcPct() {
+  let pct = 0;
+  if (state.convenios.includes('OBED'))    pct += 0.15;
+  if (state.convenios.includes('ACSI'))    pct += 0.15;
+  if (state.convenios.includes('HIDEKEL')) pct += 0.20;
+  return Math.min(0.80, pct);
+}
+
+function calcPctLabel() {
+  const p = calcPct();
+  if (!p) return '';
+  return (p * 100).toFixed(0) + '%';
+}
+
 function buildResumen() {
-  const d=state.compromisoDiario;
-  const hasOA=state.convenios.includes('OBED')||state.convenios.includes('ACSI');
-  const fase1=Object.values(state.answers).filter(v=>v==='SI').length>=2;
-  const qAlfa=parseInt(document.getElementById('numAlfa')?.value||0);
-  const qHab=parseInt(document.getElementById('numHab')?.value||0);
-  const qDip=parseInt(document.getElementById('numDip')?.value||0);
-  const qAud=parseInt(document.getElementById('numAud')?.value||0);
-  const qCuposAdd=parseInt(document.getElementById('numCuposAdd')?.value||0);
-  const padres=parseInt(document.getElementById('padresConf')?.value||0);
-  const totalInst=totalEstudiantes();
+  const d   = state.compromisoDiario;
+  const hasOA = state.convenios.includes('OBED') || state.convenios.includes('ACSI');
+  const fase1 = Object.values(state.answers).filter(v=>v==='SI').length >= 2;
+  const pct   = calcPct();
 
-  let items=[];
-  if(fase1) items.push({name:'Fase 1 — Construcción del Programa',qty:1,sub:'Protocolos, ruta, gobernanza y documentación'});
-  if(state.incluirManual) items.push({name:'Manual de Convivencia',qty:1,sub:hasOA?'Tarifa especial OBED/ACSI: $500.000':'Tarifa normal: $1.100.000'});
-  if(qAlfa>0) items.push({name:'Alfabetización Socioemocional',qty:qAlfa,sub:d?'$0/docente (Diario de Elián)':'$350.000/docente'});
-  if(qHab>0)  items.push({name:'Habilidades Socioemocionales',qty:qHab,sub:d?'$150.000/docente (Diario de Elián)':'$450.000/docente'});
-  if(qDip>0)  items.push({name:'Diplomado Formación Emocional',qty:qDip,sub:d?'$850.000/docente (Diario de Elián)':'$1.350.000/docente'});
-  if(padres===1) items.push({name:'Escuela de Padres — 1 conferencia',qty:1});
-  if(padres===2) items.push({name:'Escuela de Padres — 2 conferencias',qty:1});
-  if(qAud>0)  items.push({name:'Auditorías / Informes Externos',qty:qAud,sub:fase1?'Tarifa preferencial Fase 1':'Tarifa normal'});
-  if(totalInst>0){const c=totalInst>=250?50:30;items.push({name:'Clase Gratuita — Estudiantes + Padres + Maestros',qty:c,sub:'Cupos incluidos'});}
-  if(qCuposAdd>0) items.push({name:'Cupos adicionales clase',qty:qCuposAdd,sub:'$7.500/cupo (incluye kit estudiante)'});
+  const qAlfa     = parseInt(document.getElementById('numAlfa')?.value||0);
+  const qHab      = parseInt(document.getElementById('numHab')?.value||0);
+  const qDip      = parseInt(document.getElementById('numDip')?.value||0);
+  const qAud      = parseInt(document.getElementById('numAud')?.value||0);
+  const qCuposAdd = parseInt(document.getElementById('numCuposAdd')?.value||0);
+  const padres    = parseInt(document.getElementById('padresConf')?.value||0);
+  const totalInst = totalEstudiantes();
 
-  let html=`<div style="margin-bottom:16px;padding:16px;background:var(--surface2);border-radius:14px;border:1.5px solid var(--border);">
+  // Construir ítems con precios locales (estimado — el GS calcula el oficial)
+  let items = [];
+  let subtotal = 0;
+  let baseDescuento = 0; // solo Fase1 + Auditorías
+
+  if (fase1) {
+    const v = PRECIOS_LOCAL.fase1;
+    subtotal += v;
+    baseDescuento += v;
+    items.push({name:'Fase 1 — Construcción del Programa', qty:1,
+      sub:'Protocolos, ruta, gobernanza y documentación',
+      val:v, esDescuento:true});
+  }
+
+  if (state.incluirManual) {
+    const v = hasOA ? PRECIOS_LOCAL.manual_obed_acsi : PRECIOS_LOCAL.manual_normal;
+    subtotal += v;
+    items.push({name:'Manual de Convivencia', qty:1,
+      sub: hasOA ? 'Tarifa especial OBED/ACSI' : 'Tarifa normal',
+      val:v, esDescuento:false});
+  }
+
+  if (qAlfa > 0) {
+    const u = d ? PRECIOS_LOCAL.alfa_diario : PRECIOS_LOCAL.alfa_normal;
+    const v = u * qAlfa;
+    subtotal += v;
+    items.push({name:'Alfabetización Socioemocional', qty:qAlfa,
+      sub: d ? '$0/docente (Diario de Elián)' : '$350.000/docente',
+      val:v, esDescuento:false});
+  }
+
+  if (qHab > 0) {
+    const u = d ? PRECIOS_LOCAL.hab_diario : PRECIOS_LOCAL.hab_normal;
+    const v = u * qHab;
+    subtotal += v;
+    items.push({name:'Habilidades Socioemocionales', qty:qHab,
+      sub: d ? '$150.000/docente (Diario de Elián)' : '$450.000/docente',
+      val:v, esDescuento:false});
+  }
+
+  if (qDip > 0) {
+    const u = d ? PRECIOS_LOCAL.dip_diario : PRECIOS_LOCAL.dip_normal;
+    const v = u * qDip;
+    subtotal += v;
+    items.push({name:'Diplomado Formación Emocional', qty:qDip,
+      sub: d ? '$850.000/docente (Diario de Elián)' : '$1.350.000/docente',
+      val:v, esDescuento:false});
+  }
+
+  if (padres === 1) {
+    subtotal += PRECIOS_LOCAL.padres1;
+    items.push({name:'Escuela de Padres — 1 conferencia', qty:1, val:PRECIOS_LOCAL.padres1, esDescuento:false});
+  }
+  if (padres === 2) {
+    subtotal += PRECIOS_LOCAL.padres2;
+    items.push({name:'Escuela de Padres — 2 conferencias', qty:1, val:PRECIOS_LOCAL.padres2, esDescuento:false});
+  }
+
+  if (qAud > 0) {
+    const v = PRECIOS_LOCAL.aud_normal * qAud;
+    subtotal += v;
+    baseDescuento += v;  // ✅ Auditorías también reciben descuento de convenios
+    items.push({name:'Auditorías / Informes Externos', qty:qAud,
+      sub:'$450.000 c/u',
+      val:v, esDescuento:true});
+  }
+
+  if (totalInst > 0) {
+    const cupos = totalInst >= 250 ? 50 : 30;
+    items.push({name:'Clase Gratuita — Estudiantes + Padres + Maestros', qty:cupos,
+      sub:'Cupos incluidos', val:0, esDescuento:false});
+  }
+
+  if (qCuposAdd > 0) {
+    const v = PRECIOS_LOCAL.cupo_add * qCuposAdd;
+    subtotal += v;
+    items.push({name:'Cupos adicionales clase', qty:qCuposAdd,
+      sub:'$7.500/cupo (incluye kit estudiante)', val:v, esDescuento:false});
+  }
+
+  const descuento = Math.round(baseDescuento * pct);
+  const total     = Math.max(0, subtotal - descuento);
+  const pctLabel  = calcPctLabel();
+
+  // HTML
+  let html = `<div style="margin-bottom:16px;padding:16px;background:var(--surface2);border-radius:14px;border:1.5px solid var(--border);">
     <div style="font-size:11px;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em;font-weight:800;">Institución</div>
     <div style="font-size:16px;font-weight:900;color:var(--text);">${document.getElementById('institucion')?.value||''}</div>
     <div style="font-size:13px;color:var(--text2);margin-top:2px;font-weight:600;">${document.getElementById('encargado')?.value||''} · ${document.getElementById('ciudad')?.value||''}</div>
   </div>`;
 
-  if(state.convenios.length){
-    html+=`<div style="margin-bottom:12px;"><div style="font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;font-weight:800;">Convenios — ${state.convenios.length*20}% descuento sobre Fase 1</div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;">${state.convenios.map(c=>`<span style="padding:4px 12px;background:var(--accent3);border:1.5px solid #a8d8cc;border-radius:99px;font-size:12px;font-weight:800;color:var(--accent);">${c}</span>`).join('')}</div></div>`;
-  }
-  if(state.compromisoDiario){
-    html+=`<div style="margin-bottom:12px;"><span style="padding:5px 14px;background:var(--gold2);border:1.5px solid #f5cba7;border-radius:99px;font-size:12px;font-weight:800;color:var(--gold);">⭐ Compromiso Diario de Elián</span></div>`;
+  if (state.convenios.length) {
+    html += `<div style="margin-bottom:10px;">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;font-weight:800;">Convenios — ${pctLabel} descuento sobre Fase 1 y Auditorías</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">${state.convenios.map(c => {
+        const pcts = {OBED:'15%', ACSI:'15%', HIDEKEL:'20%'};
+        return `<span style="padding:4px 12px;background:var(--accent3);border:1.5px solid #a8d8cc;border-radius:99px;font-size:12px;font-weight:800;color:var(--accent);">${c} ${pcts[c]||''}</span>`;
+      }).join('')}</div>
+    </div>`;
   }
 
-  html+=`<div style="margin:4px 0;">`;
-  items.forEach(it=>{
-    html+=`<div class="resumen-item">
-      <div class="ri-name">${it.name}${it.sub?`<div class="ri-qty">${it.sub}</div>`:''}</div>
-      <div class="ri-val">×${it.qty}</div>
+  if (state.compromisoDiario) {
+    html += `<div style="margin-bottom:10px;"><span style="padding:5px 14px;background:var(--gold2);border:1.5px solid #f5cba7;border-radius:99px;font-size:12px;font-weight:800;color:var(--gold);">⭐ Compromiso Diario de Elián</span></div>`;
+  }
+
+  html += `<div style="margin:4px 0;">`;
+  items.forEach(it => {
+    const valStr = it.val > 0 ? `<span style="font-size:12px;color:var(--accent);font-weight:700;margin-left:8px;">$${fmtCOP(it.val)}</span>` : '';
+    const descTag = (it.esDescuento && pct > 0)
+      ? `<span style="font-size:10px;background:#fff3cd;color:#a04000;border-radius:6px;padding:1px 6px;margin-left:6px;font-weight:800;">−${pctLabel}</span>`
+      : '';
+    html += `<div class="resumen-item">
+      <div class="ri-name">${it.name}${descTag}${it.sub ? `<div class="ri-qty">${it.sub}</div>` : ''}</div>
+      <div style="text-align:right;">
+        <div class="ri-val">×${it.qty}</div>
+        ${valStr}
+      </div>
     </div>`;
   });
-  if(!items.length) html+=`<div style="color:var(--muted);font-size:14px;padding:12px 0;">No se han seleccionado ítems.</div>`;
-  html+=`</div><div class="info-box" style="margin-top:14px;">💡 Los totales exactos son calculados por el sistema al generar la cotización oficial.</div>`;
-  document.getElementById('resumenContent').innerHTML=html;
+
+  if (!items.length) html += `<div style="color:var(--muted);font-size:14px;padding:12px 0;">No se han seleccionado ítems.</div>`;
+
+  html += `</div>`;
+
+  // Totales estimados
+  if (items.length) {
+    html += `<div style="background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:16px;margin-top:14px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+        <span style="font-size:13px;color:var(--text2);font-weight:700;">Subtotal estimado</span>
+        <span style="font-size:13px;font-weight:800;color:var(--text);">$${fmtCOP(subtotal)}</span>
+      </div>`;
+    if (descuento > 0) {
+      html += `<div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+        <span style="font-size:13px;color:var(--accent);font-weight:700;">Descuento convenios (${pctLabel})</span>
+        <span style="font-size:13px;font-weight:800;color:var(--accent);">−$${fmtCOP(descuento)}</span>
+      </div>`;
+    }
+    html += `<div style="display:flex;justify-content:space-between;border-top:1.5px solid var(--border);padding-top:10px;margin-top:4px;">
+        <span style="font-size:15px;font-weight:900;color:var(--text);">Total estimado</span>
+        <span style="font-size:18px;font-weight:900;color:var(--gold);">$${fmtCOP(total)}</span>
+      </div>
+    </div>`;
+  }
+
+  html += `<div class="info-box" style="margin-top:12px;">⚠️ Estimado referencial. El sistema calculará el valor oficial con los precios vigentes de la hoja PRECIOS al generar la cotización.</div>`;
+
+  document.getElementById('resumenContent').innerHTML = html;
 }
 
 function buildPayload() {
@@ -1001,71 +1148,59 @@ function buildPayload() {
   };
 }
 
-// JSONP — único método que funciona con Apps Script sin CORS
-function callJsonp(url, params, onSuccess, onError) {
-  const cbName = 'zitro_cb_' + Date.now();
-  const timeout = setTimeout(() => {
-    cleanup();
-    onError(new Error('Tiempo de espera agotado. Verifique su conexión.'));
-  }, 30000);
+// Proxy CORS público — resuelve el bloqueo de Apps Script en navegadores
+const PROXY = 'https://corsproxy.io/?url=';
 
-  function cleanup() {
-    clearTimeout(timeout);
-    delete window[cbName];
-    const s = document.getElementById('__jsonp_script__');
-    if (s) s.remove();
-  }
-
-  window[cbName] = function(data) {
-    cleanup();
-    onSuccess(data);
-  };
-
-  const fullUrl = url + '?callback=' + cbName + '&payload=' + encodeURIComponent(JSON.stringify(params));
-  const script = document.createElement('script');
-  script.id = '__jsonp_script__';
-  script.src = fullUrl;
-  script.onerror = function() {
-    cleanup();
-    onError(new Error('No se pudo conectar con el servidor. Intente de nuevo.'));
-  };
-  document.head.appendChild(script);
-}
-
-function generarCotizacion() {
+async function generarCotizacion() {
   showErr('errFinal', false);
   const payload = buildPayload();
 
   document.getElementById('step7').classList.remove('active');
   document.getElementById('loadingWrap').classList.add('active');
 
-  callJsonp(
-    API_URL,
-    payload,
-    function(data) {
-      document.getElementById('loadingWrap').classList.remove('active');
-      if (!data.ok) {
-        document.getElementById('step7').classList.add('active');
-        document.getElementById('errFinal').textContent = '❌ ' + (data.error || 'Error del servidor');
-        showErr('errFinal', true);
-        return;
-      }
-      document.getElementById('resultCode').textContent  = data.quoteId || '';
-      document.getElementById('rSubtotal').textContent   = '$' + fmtCOP(data.subtotal);
-      document.getElementById('rDescuento').textContent  = '$' + fmtCOP(data.descuento);
-      document.getElementById('rTotal').textContent      = '$' + fmtCOP(data.total);
-      if (data.whatsappUrl) document.getElementById('btnWa').href  = data.whatsappUrl;
-      if (data.pdfUrl)      document.getElementById('btnPdf').href = data.pdfUrl;
-      document.getElementById('resultCard').classList.add('active');
-      window.scrollTo({top:0,behavior:'smooth'});
-    },
-    function(err) {
+  // Intentar primero sin proxy (por si el entorno lo permite)
+  // Si falla CORS, reintentar con proxy
+  const targetUrl = API_URL + '?payload=' + encodeURIComponent(JSON.stringify(payload));
+
+  let data;
+
+  try {
+    // Intento 1: directo
+    const res = await fetch(targetUrl, { signal: AbortSignal.timeout(8000) });
+    data = await res.json();
+  } catch(e1) {
+    try {
+      // Intento 2: vía proxy CORS
+      const res2 = await fetch(PROXY + encodeURIComponent(targetUrl), {
+        signal: AbortSignal.timeout(25000)
+      });
+      data = await res2.json();
+    } catch(e2) {
       document.getElementById('loadingWrap').classList.remove('active');
       document.getElementById('step7').classList.add('active');
-      document.getElementById('errFinal').textContent = '❌ ' + err.message;
+      document.getElementById('errFinal').textContent = '❌ Error de conexión. Verifique su internet e intente de nuevo.';
       showErr('errFinal', true);
+      return;
     }
-  );
+  }
+
+  document.getElementById('loadingWrap').classList.remove('active');
+
+  if (!data || !data.ok) {
+    document.getElementById('step7').classList.add('active');
+    document.getElementById('errFinal').textContent = '❌ ' + (data && data.error ? data.error : 'Error del servidor');
+    showErr('errFinal', true);
+    return;
+  }
+
+  document.getElementById('resultCode').textContent  = data.quoteId || '';
+  document.getElementById('rSubtotal').textContent   = '$' + fmtCOP(data.subtotal);
+  document.getElementById('rDescuento').textContent  = '$' + fmtCOP(data.descuento);
+  document.getElementById('rTotal').textContent      = '$' + fmtCOP(data.total);
+  if (data.whatsappUrl) document.getElementById('btnWa').href  = data.whatsappUrl;
+  if (data.pdfUrl)      document.getElementById('btnPdf').href = data.pdfUrl;
+  document.getElementById('resultCard').classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
 }
 
 function fmtCOP(n){return Number(n||0).toLocaleString('es-CO');}

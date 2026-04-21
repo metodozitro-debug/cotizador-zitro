@@ -1,0 +1,1 @@
+Archivos gráficos del sistema.
